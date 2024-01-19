@@ -13,8 +13,6 @@ function App() {
   let gameNumber = Math.floor(
     (new Date() - new Date("2024-01-19")) / (1000 * 60 * 60 * 24)
   );
-  // TODO: revert this
-  gameNumber = gameNumber + 1;
   let solution;
   if (SOLUTIONS.hasOwnProperty(gameNumber)) {
     solution = SOLUTIONS[gameNumber];
@@ -310,7 +308,7 @@ function App() {
               Nice job finishing the game!
             </h3>
             <p>
-            Worddicted #{gameNumber}{" "}
+              Worddicted #{gameNumber}{" "}
               <span style={{ fontSize: "24px" }}>
                 {attempts.map((attempt) => (attempt ? "😎" : "👿"))}
               </span>
