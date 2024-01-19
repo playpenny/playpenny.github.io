@@ -10,6 +10,7 @@ import {
 } from "./utils";
 
 function App() {
+  // Setup: get info for this game
   let gameNumber = Math.floor(
     (new Date() - new Date("2024-01-19")) / (1000 * 60 * 60 * 24)
   );
@@ -44,9 +45,11 @@ function App() {
     return grid;
   };
 
+  // State variables
   const copyTextRef = useRef(null);
   const [guessEnabled, setGuessEnabled] = useState(false);
   const [userInput, setUserInput] = useState("");
+  const [textCopied, setTextCopied] = useState(false);
 
   const history = getUserHistoryForToday();
   const [grid, setGrid] = useState(history?.["grid"] || createGrid(words));
@@ -88,7 +91,7 @@ function App() {
   };
 
   const handleKeyPress = (event) => {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && guessEnabled) {
       makeGuess();
     }
   };
@@ -109,15 +112,16 @@ function App() {
       const strikes = attempts
         .map((attempt) => (attempt ? yaas : nooo))
         .join("");
-      hiddenTextArea.value = `Worddicted #${gameNumber}\n${strikes}`;
+      hiddenTextArea.value = `Worddicted #${gameNumber}\n${strikes}\n\nhttps://worddicted.github.io/`;
       document.body.appendChild(hiddenTextArea);
       hiddenTextArea.select();
       document.execCommand("copy");
       document.body.removeChild(hiddenTextArea);
-      alert("Text copied to clipboard!");
+      setTextCopied(true);
     }
   };
 
+  // Update to reflect valid/invalid guess when user selects a letter
   useEffect(() => {
     if (userInput.length <= maxWords && userInput.length >= minWords) {
       setGuessEnabled(true);
@@ -161,9 +165,6 @@ function App() {
 
   const revealLetters = (guess) => {
     let guessedLetters = guess;
-    console.log(guess);
-    console.log(words);
-    console.log(guessedWords);
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       const guessStatus = guessedWords[i];
@@ -214,7 +215,10 @@ function App() {
         </h1>
         {!finishedGame ? (
           <>
+            {/* Hints */}
             <HintButton hint={hint} />
+
+            {/* Guesses */}
             <h3 style={{ marginBottom: "0px" }}>
               Guesses{" "}
               <span style={{ fontSize: "24px" }}>
@@ -244,6 +248,8 @@ function App() {
                 );
               })}
             </div>
+
+            {/* Grid */}
             <h3 style={{ marginBottom: "8px" }}>Grid</h3>
             <div>
               {grid.map((row, rowIndex) => (
@@ -278,7 +284,10 @@ function App() {
                 </div>
               ))}
             </div>
+            {/* Shuffle */}
             <AppButton onClick={handleShuffle} text="Shuffle" />
+
+            {/* Guess */}
             <p>
               <input
                 type="text"
@@ -303,15 +312,20 @@ function App() {
             </p>
           </>
         ) : (
+          // Finished board
           <>
             <h3 style={{ marginBottom: "0px" }}>
               Nice job finishing the game!
             </h3>
-            <p>
+            <p style={{ marginBottom: "0px" }}>
               Worddicted #{gameNumber}{" "}
               <span style={{ fontSize: "24px" }}>
                 {attempts.map((attempt) => (attempt ? "😎" : "👿"))}
               </span>
+            </p>
+            <p style={{ fontSize: "18px" }}>
+              {textCopied &&
+                "Result copied to keyboard, now paste and share with friends!"}
             </p>
             <AppButton
               onClick={handleCopyToClipboard}

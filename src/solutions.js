@@ -4,12 +4,12 @@ export const SOLUTIONS = {
     hint: "Penny is a funny dog rescued from Seattle. This game was originally named after her",
   },
   1: {
-    answer: ["maple", "oak", "pine", "birch"],
-    hint: "Familiar friends that help us branch out of city living.",
-  },
-  2: {
     answer: ["rose", "tulip", "daisy", "sunflower"],
     hint: "Garden fare or Trader Joe's wares.",
+  },
+  2: {
+    answer: ["maple", "oak", "pine", "birch"],
+    hint: "Familiar friends that help us branch out of city living.",
   },
   3: {
     answer: ["java", "python", "javascript", "ruby"],
