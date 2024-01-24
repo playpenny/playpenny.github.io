@@ -28,12 +28,13 @@ export const AppButton = ({ text, onClick, disabled = false }) => {
   );
 };
 
-export const HintButton = ({ hint }) => {
+export const HintButton = ({ hint, setHardMode }) => {
   const [hover, setHover] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
   const handleClick = () => {
     setShowHint(true);
+    setHardMode(false);
   };
 
   return (

@@ -7,13 +7,11 @@ import {
   findLargestWordLength,
   saveUserHistoryForToday,
   getUserHistoryForToday,
+  getGameNumber,
 } from "./utils";
 
 function App() {
-  // Setup: get info for this game
-  let gameNumber = Math.floor(
-    (new Date() - new Date("2024-01-19")) / (1000 * 60 * 60 * 24)
-  );
+  const gameNumber = getGameNumber();
   let solution;
   if (SOLUTIONS.hasOwnProperty(gameNumber)) {
     solution = SOLUTIONS[gameNumber];
@@ -62,6 +60,7 @@ function App() {
   const [finishedGame, setFinishedGame] = useState(
     history?.["finishedGame"] || false
   );
+  const [hardMode, setHardMode] = useState(history?.["hardMode"] || true);
 
   const handleInputChange = (event) => {
     const userGuess = event.target.value.toLowerCase();
@@ -112,7 +111,7 @@ function App() {
       const strikes = attempts
         .map((attempt) => (attempt ? yaas : nooo))
         .join("");
-      hiddenTextArea.value = `Worddicted #${gameNumber}\n${strikes}\n\nhttps://worddicted.github.io/`;
+      hiddenTextArea.value = `Worddicted #${gameNumber}${hardMode && `😤`}\n${strikes}\n\nhttps://worddicted.github.io/`;
       document.body.appendChild(hiddenTextArea);
       hiddenTextArea.select();
       document.execCommand("copy");
@@ -216,7 +215,7 @@ function App() {
         {!finishedGame ? (
           <>
             {/* Hints */}
-            <HintButton hint={hint} />
+            <HintButton hint={hint} setHardMode={setHardMode} />
 
             {/* Guesses */}
             <h3 style={{ marginBottom: "0px" }}>
@@ -318,7 +317,8 @@ function App() {
               Nice job finishing the game!
             </h3>
             <p style={{ marginBottom: "0px" }}>
-              Worddicted #{gameNumber}{" "}
+              Worddicted #{gameNumber}
+              {hardMode && "😤"}{" "}
               <span style={{ fontSize: "24px" }}>
                 {attempts.map((attempt) => (attempt ? "😎" : "👿"))}
               </span>

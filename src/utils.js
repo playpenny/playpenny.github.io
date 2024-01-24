@@ -25,13 +25,13 @@ export const findLargestWordLength = (words) => {
 };
 
 // Function to get today's date in the format 'YYYY-MM-DD'
-function getFormattedDate() {
+const getFormattedDate = () => {
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const day = String(today.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
+};
 
 // Function to save user history for today to localStorage
 export const saveUserHistoryForToday = (key, value) => {
@@ -53,4 +53,22 @@ export const getUserHistoryForToday = () => {
   const historyString = localStorage.getItem("userHistory");
   const userHistory = historyString ? JSON.parse(historyString) : {};
   return userHistory[today] || {};
+};
+
+export const getGameNumber = () => {
+  // Get the user's time zone
+  let userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Get the current date and time in the user's time zone
+  let currentDate = new Date();
+  let userTimeZoneOffset = currentDate.toLocaleString("en", {
+    timeZone: userTimeZone,
+  });
+  let userCurrentDateTime = new Date(userTimeZoneOffset);
+
+  // Calculate the game number
+  return Math.floor(
+    (userCurrentDateTime.getTime() - new Date("2024-01-19").getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
 };
