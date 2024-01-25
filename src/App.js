@@ -8,6 +8,7 @@ import {
   saveUserHistoryForToday,
   getUserHistoryForToday,
   getGameNumber,
+  createGrid,
 } from "./utils";
 
 function App() {
@@ -20,28 +21,7 @@ function App() {
     solution = valuesArray[Math.floor(Math.random() * valuesArray.length)];
   }
   const words = solution["answer"];
-  const minWords = findSmallestWordLength(words);
-  const maxWords = findLargestWordLength(words);
   const hint = solution["hint"];
-
-  const createGrid = (words) => {
-    const flattenedString = words.join("");
-    const shuffledLetters = flattenedString
-      .split("")
-      .sort(() => Math.random() - 0.5);
-
-    const numRows = 4;
-    const lettersPerRow = Math.ceil(shuffledLetters.length / numRows);
-    const grid = [];
-
-    for (let i = 0; i < numRows; i++) {
-      grid.push(
-        shuffledLetters.slice(i * lettersPerRow, (i + 1) * lettersPerRow)
-      );
-    }
-
-    return grid;
-  };
 
   // State variables
   const copyTextRef = useRef(null);
@@ -62,37 +42,8 @@ function App() {
   );
   const [hardMode, setHardMode] = useState(history?.["hardMode"] || true);
 
-  const handleInputChange = (event) => {
-    const userGuess = event.target.value.toLowerCase();
-    let remainingLetters = grid.flat();
-    let validInput = true;
-
-    for (let i = 0; i < userGuess.length; i++) {
-      const currentLetter = userGuess[i];
-      const indexOfCharToRemove = remainingLetters.indexOf(currentLetter);
-      if (indexOfCharToRemove === -1) {
-        validInput = false;
-        break;
-      } else {
-        remainingLetters = [
-          ...remainingLetters.slice(0, indexOfCharToRemove),
-          ...remainingLetters.slice(indexOfCharToRemove + 1),
-        ];
-      }
-    }
-    if (validInput) {
-      setUserInput(userGuess);
-    }
-  };
-
   const handleGuess = () => {
     makeGuess();
-  };
-
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter" && guessEnabled) {
-      makeGuess();
-    }
   };
 
   const handleShuffle = () => {
@@ -119,15 +70,6 @@ function App() {
       setTextCopied(true);
     }
   };
-
-  // Update to reflect valid/invalid guess when user selects a letter
-  useEffect(() => {
-    if (userInput.length <= maxWords && userInput.length >= minWords) {
-      setGuessEnabled(true);
-    } else {
-      setGuessEnabled(false);
-    }
-  }, [userInput, maxWords, minWords]);
 
   const revealWord = (guess) => {
     const wordIndex = words.findIndex((word) => word.startsWith(guess));
@@ -200,6 +142,11 @@ function App() {
     setUserInput("");
   };
 
+  const onLetterClick = (letter) => {
+    console.log(letter);
+    setUserInput(userInput + letter);
+  };
+
   let colorUserStr = userInput;
 
   return (
@@ -216,7 +163,6 @@ function App() {
           <>
             {/* Hints */}
             <HintButton hint={hint} setHardMode={setHardMode} />
-
             {/* Guesses */}
             <h3 style={{ marginBottom: "0px" }}>
               Guesses{" "}
@@ -247,12 +193,10 @@ function App() {
                 );
               })}
             </div>
-
             {/* Grid */}
-            <h3 style={{ marginBottom: "8px" }}>Grid</h3>
-            <div>
+            <div style={{ marginTop: "16px" }}>
               {grid.map((row, rowIndex) => (
-                <div key={rowIndex}>
+                <div key={rowIndex} style={{ display: "flex" }}>
                   {row.map((letter, colIndex) => {
                     let highlightUsed = false;
                     if (colorUserStr.includes(letter)) {
@@ -265,50 +209,44 @@ function App() {
                       }
                     }
                     return (
-                      <span
+                      <div
                         key={colIndex}
                         style={{
+                          backgroundColor: "beige",
+                          width: `50px`,
+                          height: `50px`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontFamily: "Futura, sans-serif",
+                          fontWeight: "bold",
+                          textTransform: "uppercase",
+                          margin: "4px",
+                          cursor: letter === "*" ? "click" : "pointer",
                           color:
                             letter === "*"
-                              ? "black"
+                              ? "beige"
                               : highlightUsed
-                                ? "black"
-                                : "white",
+                                ? "grey"
+                                : "black",
                         }}
+                        onClick={() => letter !== "*" && onLetterClick(letter)}
                       >
-                        {letter + " "}
-                      </span>
+                        {letter}
+                      </div>
                     );
                   })}
                 </div>
               ))}
             </div>
-            {/* Shuffle */}
-            <AppButton onClick={handleShuffle} text="Shuffle" />
-
-            {/* Guess */}
-            <p>
-              <input
-                type="text"
-                placeholder="Type your guess..."
-                value={userInput}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                style={{
-                  padding: "10px",
-                  fontSize: "16px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  marginRight: "10px",
-                  outline: "none",
-                }}
-              />
+            <div style={{ display: "flex" }}>
+              <AppButton onClick={handleShuffle} text="Shuffle" />{" "}
               <AppButton
                 onClick={handleGuess}
                 disabled={!guessEnabled}
                 text="Guess"
               />
-            </p>
+            </div>
           </>
         ) : (
           // Finished board

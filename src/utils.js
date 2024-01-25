@@ -24,6 +24,48 @@ export const findLargestWordLength = (words) => {
   return largestLength;
 };
 
+export const getGameNumber = () => {
+  // Get the user's time zone
+  let userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Get the current date and time in the user's time zone
+  let currentDate = new Date();
+  let userTimeZoneOffset = currentDate.toLocaleString("en", {
+    timeZone: userTimeZone,
+  });
+  let userCurrentDateTime = new Date(userTimeZoneOffset);
+
+  // Calculate the game number
+  return Math.floor(
+    (userCurrentDateTime.getTime() - new Date("2024-01-19").getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+};
+
+export const createGrid = (words) => {
+  const flattenedString = words.join("");
+  const squareNumber = Math.ceil(Math.sqrt(flattenedString.length));
+  const missingChars = squareNumber ** 2 - flattenedString.length;
+  const stars = "*".repeat(missingChars);
+
+  const modifiedString = flattenedString + stars;
+
+  const shuffledLetters = modifiedString
+    .split("")
+    .sort(() => Math.random() - 0.5);
+
+  const numRows = Math.sqrt(modifiedString.length);
+  const grid = [];
+
+  for (let i = 0; i < numRows; i++) {
+    grid.push(shuffledLetters.slice(i * numRows, (i + 1) * numRows));
+  }
+
+  return grid;
+};
+
+// User history utils
+
 // Function to get today's date in the format 'YYYY-MM-DD'
 const getFormattedDate = () => {
   const today = new Date();
@@ -51,25 +93,7 @@ export const saveUserHistoryForToday = (key, value) => {
 export const getUserHistoryForToday = () => {
   localStorage.setItem("userHistory", JSON.stringify({}));
   const today = getFormattedDate();
-  const historyString = localStorage.getItem("userHistory");
+  const historyString = localStorage.getItem({});
   const userHistory = historyString ? JSON.parse(historyString) : {};
   return userHistory[today] || {};
-};
-
-export const getGameNumber = () => {
-  // Get the user's time zone
-  let userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  // Get the current date and time in the user's time zone
-  let currentDate = new Date();
-  let userTimeZoneOffset = currentDate.toLocaleString("en", {
-    timeZone: userTimeZone,
-  });
-  let userCurrentDateTime = new Date(userTimeZoneOffset);
-
-  // Calculate the game number
-  return Math.floor(
-    (userCurrentDateTime.getTime() - new Date("2024-01-19").getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
 };
