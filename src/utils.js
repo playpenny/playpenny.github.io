@@ -49,6 +49,7 @@ export const saveUserHistoryForToday = (key, value) => {
 
 // Function to retrieve user history for today from localStorage
 export const getUserHistoryForToday = () => {
+  localStorage.setItem("userHistory", JSON.stringify({}));
   const today = getFormattedDate();
   const historyString = localStorage.getItem("userHistory");
   const userHistory = historyString ? JSON.parse(historyString) : {};

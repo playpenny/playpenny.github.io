@@ -111,7 +111,7 @@ function App() {
       const strikes = attempts
         .map((attempt) => (attempt ? yaas : nooo))
         .join("");
-      hiddenTextArea.value = `Worddicted #${gameNumber}${hardMode && `*`}\n${strikes}\n\nhttps://worddicted.github.io/`;
+      hiddenTextArea.value = `Worddicted #${gameNumber}${hardMode ? `*` : ""}\n${strikes}\n\nhttps://worddicted.github.io/`;
       document.body.appendChild(hiddenTextArea);
       hiddenTextArea.select();
       document.execCommand("copy");
