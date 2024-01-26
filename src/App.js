@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { AppButton, HintButton } from "./Components";
 import "./App.css";
 import { SOLUTIONS } from "./solutions";
@@ -30,6 +30,7 @@ function App() {
   const copyTextRef = useRef(null);
   const [guessEnabled, setGuessEnabled] = useState(false);
   const [userInput, setUserInput] = useState("");
+  const [guessBox, setGuessBox] = useState(Array(largestLength).fill("*"));
   const [textCopied, setTextCopied] = useState(false);
   const [selectedLetters, setSelectedLetters] = useState([]);
 
@@ -141,12 +142,18 @@ function App() {
       revealLetters(input);
     }
     setUserInput("");
+    setGuessBox(Array(largestLength).fill("*"));
   };
 
   const onLetterClick = (letter) => {
     setSelectedLetters([...selectedLetters, letter["id"]]);
     const newGuess = userInput + letter["value"];
     setUserInput(newGuess);
+    let newGuessBox = guessBox;
+    for (let i = 0; i < newGuess.length; i++) {
+      newGuessBox[i] = newGuess[i];
+    }
+    setGuessBox(newGuessBox);
     if (newGuess.length >= smallestLength && newGuess.length <= largestLength) {
       setGuessEnabled(true);
     } else {
@@ -181,7 +188,7 @@ function App() {
                 {wordBank.length === 0 && "None so far, you're a star!⭐"}
               </span>
             </div>
-            <div>
+            <div style={{ marginBottom: "8px" }}>
               {guessedWords.map((word, wordIndex) => {
                 const guesses = word.map((letter, letterIndex) => {
                   return (
@@ -198,7 +205,30 @@ function App() {
                 );
               })}
             </div>
-            <div>Guess: {userInput}</div>
+            <div>
+              {guessBox.map((entry, entryId) => (
+                <div
+                  key={entryId}
+                  style={{
+                    display: "inline-block",
+                    backgroundColor: entry === "*" ? "transparent" : "beige",
+                    border: entry === "*" ? "1px solid beige" : "none",
+                    width: `${window.innerWidth / (largestLength + 2)}px`,
+                    height: `${window.innerWidth / (largestLength + 2)}px`,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: "Futura, sans-serif",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    margin: "4px",
+                    fontSize: "xx-large",
+                    color: entry === "*" ? "transparent" : "black",
+                  }}
+                >
+                  {entry === "*" ? "*" : entry}
+                </div>
+              ))}
+            </div>
             {/* Grid */}
             <div style={{ marginTop: "16px" }}>
               {grid.map((row, rowIndex) => (
@@ -218,11 +248,12 @@ function App() {
                         textTransform: "uppercase",
                         margin: "4px",
                         cursor: entry["value"] === "*" ? "click" : "pointer",
+                        fontSize: "xx-large",
                         color:
                           entry["value"] === "*"
                             ? "beige"
                             : selectedLetters.includes(entry["id"])
-                              ? "grey"
+                              ? "#bfbfbf" // light grey
                               : "black",
                       }}
                       onClick={() =>
@@ -237,6 +268,14 @@ function App() {
             </div>
             <div style={{ display: "flex" }}>
               <AppButton onClick={handleShuffle} text="Shuffle" />{" "}
+              <AppButton
+                onClick={() => {
+                  setUserInput("");
+                  setGuessBox(Array(largestLength).fill("*"));
+                  setSelectedLetters([]);
+                }}
+                text="Clear"
+              />{" "}
               <AppButton
                 onClick={handleGuess}
                 disabled={!guessEnabled}
