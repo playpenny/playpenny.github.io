@@ -1,7 +1,7 @@
 export const SOLUTIONS = {
   0: {
-    answer: ["hound", "chow", "beagle", "corgi"],
-    hint: "Penny is a funny dog rescued from Seattle. This game was originally named after her",
+    answer: ["cheater", "imposter", "hacker", "trickster"],
+    hint: "Someone who looks at the solution source code instead of playing the game...",
   },
   1: {
     answer: ["rose", "tulip", "daisy", "sunflower"],

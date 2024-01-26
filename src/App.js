@@ -8,7 +8,8 @@ import {
   saveUserHistoryForToday,
   getUserHistoryForToday,
   getGameNumber,
-  createGrid,
+  createInitialGrid,
+  shuffleGrid,
 } from "./utils";
 
 function App() {
@@ -22,15 +23,20 @@ function App() {
   }
   const words = solution["answer"];
   const hint = solution["hint"];
+  const smallestLength = findSmallestWordLength(words);
+  const largestLength = findLargestWordLength(words);
 
   // State variables
   const copyTextRef = useRef(null);
   const [guessEnabled, setGuessEnabled] = useState(false);
   const [userInput, setUserInput] = useState("");
   const [textCopied, setTextCopied] = useState(false);
+  const [selectedLetters, setSelectedLetters] = useState([]);
 
   const history = getUserHistoryForToday();
-  const [grid, setGrid] = useState(history?.["grid"] || createGrid(words));
+  const [grid, setGrid] = useState(
+    history?.["grid"] || createInitialGrid(words)
+  );
   const [guessedWords, setGuessedWords] = useState(
     history?.["guessedWords"] ||
       words.map((word) => Array(word.length).fill(""))
@@ -47,9 +53,7 @@ function App() {
   };
 
   const handleShuffle = () => {
-    const gridCopy = [...grid];
-    const gridWords = gridCopy.map((arr) => arr.join(""));
-    const newGrid = createGrid(gridWords);
+    const newGrid = shuffleGrid([...grid]);
     setGrid(newGrid);
     saveUserHistoryForToday("grid", newGrid);
   };
@@ -78,22 +82,18 @@ function App() {
     setGuessedWords(updatedGuessedWords);
     saveUserHistoryForToday("guessedWords", updatedGuessedWords);
 
-    let lettersToRemove = words[wordIndex].split("");
     const updatedGrid = grid.map((row) =>
-      row.map((letter) => {
-        const isPartOfGuessedWord = lettersToRemove.includes(letter);
-        if (isPartOfGuessedWord) {
-          const indexOfCharToRemove = lettersToRemove.indexOf(letter);
-          lettersToRemove = [
-            ...lettersToRemove.slice(0, indexOfCharToRemove),
-            ...lettersToRemove.slice(indexOfCharToRemove + 1),
-          ];
+      row.map((entry) => {
+        if (selectedLetters.includes(entry["id"])) {
+          return { id: entry["id"], value: "*" };
+        } else {
+          return entry;
         }
-        return isPartOfGuessedWord ? "*" : letter;
       })
     );
 
     setGrid(updatedGrid);
+    setSelectedLetters([]);
     saveUserHistoryForToday("grid", updatedGrid);
 
     if (
@@ -120,6 +120,7 @@ function App() {
       }
     }
     setGuessedWords(guessedWords);
+    setSelectedLetters([]);
     saveUserHistoryForToday("guessedWords", guessedWords);
   };
 
@@ -143,11 +144,15 @@ function App() {
   };
 
   const onLetterClick = (letter) => {
-    console.log(letter);
-    setUserInput(userInput + letter);
+    setSelectedLetters([...selectedLetters, letter["id"]]);
+    const newGuess = userInput + letter["value"];
+    setUserInput(newGuess);
+    if (newGuess.length >= smallestLength && newGuess.length <= largestLength) {
+      setGuessEnabled(true);
+    } else {
+      setGuessEnabled(false);
+    }
   };
-
-  let colorUserStr = userInput;
 
   return (
     <div className="App">
@@ -193,49 +198,40 @@ function App() {
                 );
               })}
             </div>
+            <div>Guess: {userInput}</div>
             {/* Grid */}
             <div style={{ marginTop: "16px" }}>
               {grid.map((row, rowIndex) => (
                 <div key={rowIndex} style={{ display: "flex" }}>
-                  {row.map((letter, colIndex) => {
-                    let highlightUsed = false;
-                    if (colorUserStr.includes(letter)) {
-                      const indexToRemove = colorUserStr.indexOf(letter);
-                      if (indexToRemove !== -1) {
-                        colorUserStr =
-                          colorUserStr.slice(0, indexToRemove) +
-                          colorUserStr.slice(indexToRemove + 1);
-                        highlightUsed = true;
+                  {row.map((entry) => (
+                    <div
+                      key={entry["id"]}
+                      style={{
+                        backgroundColor: "beige",
+                        width: `50px`,
+                        height: `50px`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "Futura, sans-serif",
+                        fontWeight: "bold",
+                        textTransform: "uppercase",
+                        margin: "4px",
+                        cursor: entry["value"] === "*" ? "click" : "pointer",
+                        color:
+                          entry["value"] === "*"
+                            ? "beige"
+                            : selectedLetters.includes(entry["id"])
+                              ? "grey"
+                              : "black",
+                      }}
+                      onClick={() =>
+                        entry["value"] !== "*" && onLetterClick(entry)
                       }
-                    }
-                    return (
-                      <div
-                        key={colIndex}
-                        style={{
-                          backgroundColor: "beige",
-                          width: `50px`,
-                          height: `50px`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontFamily: "Futura, sans-serif",
-                          fontWeight: "bold",
-                          textTransform: "uppercase",
-                          margin: "4px",
-                          cursor: letter === "*" ? "click" : "pointer",
-                          color:
-                            letter === "*"
-                              ? "beige"
-                              : highlightUsed
-                                ? "grey"
-                                : "black",
-                        }}
-                        onClick={() => letter !== "*" && onLetterClick(letter)}
-                      >
-                        {letter}
-                      </div>
-                    );
-                  })}
+                    >
+                      {entry["value"]}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

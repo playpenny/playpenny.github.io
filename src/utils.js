@@ -42,7 +42,7 @@ export const getGameNumber = () => {
   );
 };
 
-export const createGrid = (words) => {
+export const createInitialGrid = (words) => {
   const flattenedString = words.join("");
   const squareNumber = Math.ceil(Math.sqrt(flattenedString.length));
   const missingChars = squareNumber ** 2 - flattenedString.length;
@@ -58,10 +58,27 @@ export const createGrid = (words) => {
   const grid = [];
 
   for (let i = 0; i < numRows; i++) {
-    grid.push(shuffledLetters.slice(i * numRows, (i + 1) * numRows));
+    const row = [];
+    for (let j = 0; j < numRows; j++) {
+      const index = i * numRows + j;
+      const letter = shuffledLetters[index];
+      row.push({ id: index, value: letter });
+    }
+    grid.push(row);
   }
 
   return grid;
+};
+
+export const shuffleGrid = (grid) => {
+  const flattenedGrid = grid.flat();
+  const shuffledGrid = flattenedGrid.sort(() => Math.random() - 0.5);
+  const numRows = Math.sqrt(shuffledGrid.length);
+  const reshapedGrid = [];
+  for (let i = 0; i < numRows; i++) {
+    reshapedGrid.push(shuffledGrid.slice(i * numRows, (i + 1) * numRows));
+  }
+  return reshapedGrid;
 };
 
 // User history utils
