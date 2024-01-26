@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { AppButton, HintButton } from "./Components";
 import "./App.css";
 import { SOLUTIONS } from "./solutions";
@@ -8,7 +8,12 @@ import {
   saveUserHistoryForToday,
   getUserHistoryForToday,
   getGameNumber,
+  createInitialGrid,
+  shuffleGrid,
+  removeExcessStars,
 } from "./utils";
+
+import SuperFunky from "./fonts/SuperFunky.ttf";
 
 function App() {
   const gameNumber = getGameNumber();
@@ -20,37 +25,22 @@ function App() {
     solution = valuesArray[Math.floor(Math.random() * valuesArray.length)];
   }
   const words = solution["answer"];
-  const minWords = findSmallestWordLength(words);
-  const maxWords = findLargestWordLength(words);
   const hint = solution["hint"];
-
-  const createGrid = (words) => {
-    const flattenedString = words.join("");
-    const shuffledLetters = flattenedString
-      .split("")
-      .sort(() => Math.random() - 0.5);
-
-    const numRows = 4;
-    const lettersPerRow = Math.ceil(shuffledLetters.length / numRows);
-    const grid = [];
-
-    for (let i = 0; i < numRows; i++) {
-      grid.push(
-        shuffledLetters.slice(i * lettersPerRow, (i + 1) * lettersPerRow)
-      );
-    }
-
-    return grid;
-  };
+  const smallestLength = findSmallestWordLength(words);
+  const largestLength = findLargestWordLength(words);
 
   // State variables
   const copyTextRef = useRef(null);
   const [guessEnabled, setGuessEnabled] = useState(false);
   const [userInput, setUserInput] = useState("");
+  const [guessBox, setGuessBox] = useState(Array(largestLength).fill("*"));
   const [textCopied, setTextCopied] = useState(false);
+  const [selectedLetters, setSelectedLetters] = useState([]);
 
   const history = getUserHistoryForToday();
-  const [grid, setGrid] = useState(history?.["grid"] || createGrid(words));
+  const [grid, setGrid] = useState(
+    history?.["grid"] || createInitialGrid(words)
+  );
   const [guessedWords, setGuessedWords] = useState(
     history?.["guessedWords"] ||
       words.map((word) => Array(word.length).fill(""))
@@ -62,43 +52,12 @@ function App() {
   );
   const [hardMode, setHardMode] = useState(history?.["hardMode"] || true);
 
-  const handleInputChange = (event) => {
-    const userGuess = event.target.value.toLowerCase();
-    let remainingLetters = grid.flat();
-    let validInput = true;
-
-    for (let i = 0; i < userGuess.length; i++) {
-      const currentLetter = userGuess[i];
-      const indexOfCharToRemove = remainingLetters.indexOf(currentLetter);
-      if (indexOfCharToRemove === -1) {
-        validInput = false;
-        break;
-      } else {
-        remainingLetters = [
-          ...remainingLetters.slice(0, indexOfCharToRemove),
-          ...remainingLetters.slice(indexOfCharToRemove + 1),
-        ];
-      }
-    }
-    if (validInput) {
-      setUserInput(userGuess);
-    }
-  };
-
   const handleGuess = () => {
     makeGuess();
   };
 
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter" && guessEnabled) {
-      makeGuess();
-    }
-  };
-
   const handleShuffle = () => {
-    const gridCopy = [...grid];
-    const gridWords = gridCopy.map((arr) => arr.join(""));
-    const newGrid = createGrid(gridWords);
+    const newGrid = shuffleGrid([...grid]);
     setGrid(newGrid);
     saveUserHistoryForToday("grid", newGrid);
   };
@@ -120,15 +79,6 @@ function App() {
     }
   };
 
-  // Update to reflect valid/invalid guess when user selects a letter
-  useEffect(() => {
-    if (userInput.length <= maxWords && userInput.length >= minWords) {
-      setGuessEnabled(true);
-    } else {
-      setGuessEnabled(false);
-    }
-  }, [userInput, maxWords, minWords]);
-
   const revealWord = (guess) => {
     const wordIndex = words.findIndex((word) => word.startsWith(guess));
     const updatedGuessedWords = [...guessedWords];
@@ -136,23 +86,21 @@ function App() {
     setGuessedWords(updatedGuessedWords);
     saveUserHistoryForToday("guessedWords", updatedGuessedWords);
 
-    let lettersToRemove = words[wordIndex].split("");
     const updatedGrid = grid.map((row) =>
-      row.map((letter) => {
-        const isPartOfGuessedWord = lettersToRemove.includes(letter);
-        if (isPartOfGuessedWord) {
-          const indexOfCharToRemove = lettersToRemove.indexOf(letter);
-          lettersToRemove = [
-            ...lettersToRemove.slice(0, indexOfCharToRemove),
-            ...lettersToRemove.slice(indexOfCharToRemove + 1),
-          ];
+      row.map((entry) => {
+        if (selectedLetters.includes(entry["id"])) {
+          return { id: entry["id"], value: "*" };
+        } else {
+          return entry;
         }
-        return isPartOfGuessedWord ? "*" : letter;
       })
     );
 
-    setGrid(updatedGrid);
-    saveUserHistoryForToday("grid", updatedGrid);
+    const removedStars = removeExcessStars(updatedGrid);
+
+    setGrid(shuffleGrid(removedStars));
+    setSelectedLetters([]);
+    saveUserHistoryForToday("grid", removedStars);
 
     if (
       updatedGuessedWords.every((word) => word.every((letter) => letter !== ""))
@@ -178,6 +126,7 @@ function App() {
       }
     }
     setGuessedWords(guessedWords);
+    setSelectedLetters([]);
     saveUserHistoryForToday("guessedWords", guessedWords);
   };
 
@@ -198,16 +147,40 @@ function App() {
       revealLetters(input);
     }
     setUserInput("");
+    setGuessBox(Array(largestLength).fill("*"));
   };
 
-  let colorUserStr = userInput;
+  const onLetterClick = (letter) => {
+    if (guessBox.slice(-1)[0] === "*") {
+      setSelectedLetters([...selectedLetters, letter["id"]]);
+      const newGuess = userInput + letter["value"];
+      setUserInput(newGuess);
+      let newGuessBox = guessBox;
+      for (let i = 0; i < newGuess.length; i++) {
+        newGuessBox[i] = newGuess[i];
+      }
+      setGuessBox(newGuessBox);
+      if (
+        newGuess.length >= smallestLength &&
+        newGuess.length <= largestLength
+      ) {
+        setGuessEnabled(true);
+      } else {
+        setGuessEnabled(false);
+      }
+    }
+  };
 
   return (
     <div className="App">
       <header className="App-header">
         <h1
           style={{
+            fontSize: "2.5em",
             marginBottom: "0px",
+            fontFamily: "SuperFunky",
+            src: `url(${SuperFunky}) format('truetype')`,
+            textShadow: "2px 2px 4px #000080",
           }}
         >
           Worddicted
@@ -216,7 +189,6 @@ function App() {
           <>
             {/* Hints */}
             <HintButton hint={hint} setHardMode={setHardMode} />
-
             {/* Guesses */}
             <h3 style={{ marginBottom: "0px" }}>
               Guesses{" "}
@@ -230,7 +202,7 @@ function App() {
                 {wordBank.length === 0 && "None so far, you're a star!⭐"}
               </span>
             </div>
-            <div>
+            <div style={{ marginBottom: "8px" }}>
               {guessedWords.map((word, wordIndex) => {
                 const guesses = word.map((letter, letterIndex) => {
                   return (
@@ -247,68 +219,85 @@ function App() {
                 );
               })}
             </div>
-
-            {/* Grid */}
-            <h3 style={{ marginBottom: "8px" }}>Grid</h3>
             <div>
-              {grid.map((row, rowIndex) => (
-                <div key={rowIndex}>
-                  {row.map((letter, colIndex) => {
-                    let highlightUsed = false;
-                    if (colorUserStr.includes(letter)) {
-                      const indexToRemove = colorUserStr.indexOf(letter);
-                      if (indexToRemove !== -1) {
-                        colorUserStr =
-                          colorUserStr.slice(0, indexToRemove) +
-                          colorUserStr.slice(indexToRemove + 1);
-                        highlightUsed = true;
-                      }
-                    }
-                    return (
-                      <span
-                        key={colIndex}
-                        style={{
-                          color:
-                            letter === "*"
-                              ? "black"
-                              : highlightUsed
-                                ? "black"
-                                : "white",
-                        }}
-                      >
-                        {letter + " "}
-                      </span>
-                    );
-                  })}
+              {guessBox.map((entry, entryId) => (
+                <div
+                  key={entryId}
+                  style={{
+                    display: "inline-block",
+                    backgroundColor: entry === "*" ? "transparent" : "beige",
+                    border: entry === "*" ? "1px solid beige" : "none",
+                    width: `${Math.min(window.innerWidth / (largestLength + 3), 50)}px`,
+                    height: `${Math.min(window.innerWidth / (largestLength + 3), 50)}px`,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: "Futura, sans-serif",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    margin: "4px",
+                    fontSize: "xx-large",
+                    color: entry === "*" ? "transparent" : "black",
+                  }}
+                >
+                  {entry === "*" ? "*" : entry}
                 </div>
               ))}
             </div>
-            {/* Shuffle */}
-            <AppButton onClick={handleShuffle} text="Shuffle" />
-
-            {/* Guess */}
-            <p>
-              <input
-                type="text"
-                placeholder="Type your guess..."
-                value={userInput}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                style={{
-                  padding: "10px",
-                  fontSize: "16px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  marginRight: "10px",
-                  outline: "none",
+            {/* Grid */}
+            <div style={{ marginTop: "16px" }}>
+              {grid.map((row, rowIndex) => (
+                <div key={rowIndex} style={{ display: "flex" }}>
+                  {row.map((entry) => (
+                    <div
+                      key={entry["id"]}
+                      style={{
+                        backgroundColor: "beige",
+                        width: `50px`,
+                        height: `50px`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "Futura, sans-serif",
+                        fontWeight: "bold",
+                        textTransform: "uppercase",
+                        margin: "4px",
+                        cursor: entry["value"] === "*" ? "click" : "pointer",
+                        fontSize: "xx-large",
+                        color:
+                          entry["value"] === "*"
+                            ? "beige"
+                            : selectedLetters.includes(entry["id"])
+                              ? "#bfbfbf" // light grey
+                              : "black",
+                      }}
+                      onClick={() =>
+                        entry["value"] !== "*" &&
+                        !selectedLetters.includes(entry["id"]) &&
+                        onLetterClick(entry)
+                      }
+                    >
+                      {entry["value"]}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex" }}>
+              <AppButton onClick={handleShuffle} text="Shuffle" />{" "}
+              <AppButton
+                onClick={() => {
+                  setUserInput("");
+                  setGuessBox(Array(largestLength).fill("*"));
+                  setSelectedLetters([]);
                 }}
-              />
+                text="Clear"
+              />{" "}
               <AppButton
                 onClick={handleGuess}
                 disabled={!guessEnabled}
                 text="Guess"
               />
-            </p>
+            </div>
           </>
         ) : (
           // Finished board

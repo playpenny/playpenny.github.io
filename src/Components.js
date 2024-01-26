@@ -13,6 +13,8 @@ export const AppButton = ({ text, onClick, disabled = false }) => {
     borderRadius: "10px",
     cursor: disabled ? "not-allowed" : "pointer", // Change cursor if disabled
     marginTop: "8px",
+    marginLeft: "8px",
+    marginRight: "8px",
   };
 
   return (
@@ -53,6 +55,8 @@ export const HintButton = ({ hint, setHardMode }) => {
         marginTop: "8px",
         transition: "background-color 0.5s ease-in-out, color 0.5s ease-in-out",
         cursor: showHint ? "inherit" : "pointer",
+        marginLeft: "4px",
+        marginRight: "4px",
       }}
     >
       {showHint ? `Today's Hint: ${hint}` : "Show me a hint"}
