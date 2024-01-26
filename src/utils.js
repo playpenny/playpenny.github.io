@@ -42,10 +42,11 @@ export const getGameNumber = () => {
   );
 };
 
-export const createInitialGrid = (words) => {
+export const createInitialGrid = (words, lettersPerRow = 6) => {
   const flattenedString = words.join("");
-  const squareNumber = Math.ceil(Math.sqrt(flattenedString.length));
-  const missingChars = squareNumber ** 2 - flattenedString.length;
+  const totalLetters = flattenedString.length;
+  const missingChars =
+    (lettersPerRow - (totalLetters % lettersPerRow)) % lettersPerRow;
   const stars = "*".repeat(missingChars);
 
   const modifiedString = flattenedString + stars;
@@ -54,13 +55,13 @@ export const createInitialGrid = (words) => {
     .split("")
     .sort(() => Math.random() - 0.5);
 
-  const numRows = Math.sqrt(modifiedString.length);
+  const numRows = Math.ceil(modifiedString.length / lettersPerRow);
   const grid = [];
 
   for (let i = 0; i < numRows; i++) {
     const row = [];
-    for (let j = 0; j < numRows; j++) {
-      const index = i * numRows + j;
+    for (let j = 0; j < lettersPerRow; j++) {
+      const index = i * lettersPerRow + j;
       const letter = shuffledLetters[index];
       row.push({ id: index, value: letter });
     }
@@ -70,15 +71,39 @@ export const createInitialGrid = (words) => {
   return grid;
 };
 
-export const shuffleGrid = (grid) => {
-  const flattenedGrid = grid.flat();
-  const shuffledGrid = flattenedGrid.sort(() => Math.random() - 0.5);
-  const numRows = Math.sqrt(shuffledGrid.length);
-  const reshapedGrid = [];
-  for (let i = 0; i < numRows; i++) {
-    reshapedGrid.push(shuffledGrid.slice(i * numRows, (i + 1) * numRows));
+export const removeExcessStars = (grid, lettersPerRow = 6) => {
+  const stars = grid.flat().filter((entry) => entry.value === "*");
+  let starsToAllow = stars.length % lettersPerRow;
+
+  const updatedGrid = [];
+  for (let i = 0; i < grid.length; i++) {
+    const row = grid[i];
+    for (let j = 0; j < row.length; j++) {
+      const kv = row[j];
+      if (kv["value"] === "*" && starsToAllow > 0) {
+        starsToAllow -= 1;
+        updatedGrid.push(kv);
+      } else if (kv["value"] !== "*") {
+        updatedGrid.push(kv);
+      }
+    }
   }
-  return reshapedGrid;
+  const numRows = Math.ceil(updatedGrid.length / lettersPerRow);
+  const reshapedArray = Array.from({ length: numRows }, (_, rowIndex) =>
+    updatedGrid.slice(rowIndex * lettersPerRow, (rowIndex + 1) * lettersPerRow)
+  );
+  return reshapedArray;
+};
+
+export const shuffleGrid = (grid, lettersPerRow = 6) => {
+  const flatGrid = grid.flat();
+  const shuffledFlatGrid = flatGrid.sort(() => Math.random() - 0.5);
+  const shuffledGrid = [];
+  for (let i = 0; i < shuffledFlatGrid.length; i += lettersPerRow) {
+    const row = shuffledFlatGrid.slice(i, i + lettersPerRow);
+    shuffledGrid.push(row);
+  }
+  return shuffledGrid;
 };
 
 // User history utils
@@ -108,9 +133,8 @@ export const saveUserHistoryForToday = (key, value) => {
 
 // Function to retrieve user history for today from localStorage
 export const getUserHistoryForToday = () => {
-  localStorage.setItem("userHistory", JSON.stringify({}));
   const today = getFormattedDate();
-  const historyString = localStorage.getItem({});
+  const historyString = localStorage.getItem("userHistory");
   const userHistory = historyString ? JSON.parse(historyString) : {};
   return userHistory[today] || {};
 };

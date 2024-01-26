@@ -10,7 +10,10 @@ import {
   getGameNumber,
   createInitialGrid,
   shuffleGrid,
+  removeExcessStars,
 } from "./utils";
+
+import SuperFunky from "./fonts/SuperFunky.ttf";
 
 function App() {
   const gameNumber = getGameNumber();
@@ -93,9 +96,11 @@ function App() {
       })
     );
 
-    setGrid(updatedGrid);
+    const removedStars = removeExcessStars(updatedGrid);
+
+    setGrid(shuffleGrid(removedStars));
     setSelectedLetters([]);
-    saveUserHistoryForToday("grid", updatedGrid);
+    saveUserHistoryForToday("grid", removedStars);
 
     if (
       updatedGuessedWords.every((word) => word.every((letter) => letter !== ""))
@@ -146,18 +151,23 @@ function App() {
   };
 
   const onLetterClick = (letter) => {
-    setSelectedLetters([...selectedLetters, letter["id"]]);
-    const newGuess = userInput + letter["value"];
-    setUserInput(newGuess);
-    let newGuessBox = guessBox;
-    for (let i = 0; i < newGuess.length; i++) {
-      newGuessBox[i] = newGuess[i];
-    }
-    setGuessBox(newGuessBox);
-    if (newGuess.length >= smallestLength && newGuess.length <= largestLength) {
-      setGuessEnabled(true);
-    } else {
-      setGuessEnabled(false);
+    if (guessBox.slice(-1)[0] === "*") {
+      setSelectedLetters([...selectedLetters, letter["id"]]);
+      const newGuess = userInput + letter["value"];
+      setUserInput(newGuess);
+      let newGuessBox = guessBox;
+      for (let i = 0; i < newGuess.length; i++) {
+        newGuessBox[i] = newGuess[i];
+      }
+      setGuessBox(newGuessBox);
+      if (
+        newGuess.length >= smallestLength &&
+        newGuess.length <= largestLength
+      ) {
+        setGuessEnabled(true);
+      } else {
+        setGuessEnabled(false);
+      }
     }
   };
 
@@ -166,7 +176,11 @@ function App() {
       <header className="App-header">
         <h1
           style={{
+            fontSize: "2.5em",
             marginBottom: "0px",
+            fontFamily: "SuperFunky",
+            src: `url(${SuperFunky}) format('truetype')`,
+            textShadow: "2px 2px 4px #000080",
           }}
         >
           Worddicted
@@ -213,8 +227,8 @@ function App() {
                     display: "inline-block",
                     backgroundColor: entry === "*" ? "transparent" : "beige",
                     border: entry === "*" ? "1px solid beige" : "none",
-                    width: `${window.innerWidth / (largestLength + 2)}px`,
-                    height: `${window.innerWidth / (largestLength + 2)}px`,
+                    width: `${Math.min(window.innerWidth / (largestLength + 3), 50)}px`,
+                    height: `${Math.min(window.innerWidth / (largestLength + 3), 50)}px`,
                     alignItems: "center",
                     justifyContent: "center",
                     fontFamily: "Futura, sans-serif",
@@ -257,7 +271,9 @@ function App() {
                               : "black",
                       }}
                       onClick={() =>
-                        entry["value"] !== "*" && onLetterClick(entry)
+                        entry["value"] !== "*" &&
+                        !selectedLetters.includes(entry["id"]) &&
+                        onLetterClick(entry)
                       }
                     >
                       {entry["value"]}
